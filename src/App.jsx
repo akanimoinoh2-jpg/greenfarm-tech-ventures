@@ -434,9 +434,14 @@ function ContactPage() {
           <span className="eyebrow">Let’s start here</span>
           <h2>Tell us what<br />you’re <em>growing.</em></h2>
           <p>Reach out on WhatsApp for a direct conversation. Or find us across the social channels below.</p>
-          <a className="whatsapp-card" href="https://wa.me/2348060379022" target="_blank" rel="noreferrer">
-            <span className="whatsapp-card__icon" aria-hidden="true">W</span>
+          <a className="contact-method" href="https://wa.me/2348060379022" target="_blank" rel="noreferrer">
+            <span className="contact-method__icon" aria-hidden="true">W</span>
             <span><small>Message us on WhatsApp</small><strong>+234 806 037 9022</strong></span>
+            <Arrow />
+          </a>
+          <a className="contact-method contact-method--email" href="mailto:greenfarmtechv@gmail.com">
+            <span className="contact-method__icon" aria-hidden="true">@</span>
+            <span><small>Email us</small><strong>greenfarmtechv@gmail.com</strong></span>
             <Arrow />
           </a>
           <div className="contact-note"><span className="contact-note__dot" /> We’re always open to a thoughtful conversation.</div>
