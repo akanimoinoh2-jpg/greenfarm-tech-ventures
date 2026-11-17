@@ -11,6 +11,13 @@ import vegetables from '../vege.jpeg';
 import brandLogo from '../WhatsApp logo.jpeg';
 import harvest from '../WhatsApp Image 2026-11-15 at 1.32.26 PM.jpeg';
 import greens from '../WhatsApp Image 2026-11-15 at 1.32.27 PM.jpeg';
+import ceoPortrait from '../WhatsApp Image 2026-11-16 at 6.08.12 PM.jpeg';
+
+const initialProfile = {
+  name: 'Rich Victor Jeremiah',
+  title: 'Chief Executive Officer',
+  bio: 'Rich Victor Jeremiah leads Greenfarm & Tech Ventures at the meeting point of agriculture and technology. His work is guided by practical innovation, sustainable growth and creating opportunity for people and communities.',
+};
 
 const routes = [
   { path: '/', label: 'Home' },
@@ -58,18 +65,19 @@ const serviceItems = [
 
 const projects = [
   { title: 'Cassava in the field', category: 'Root crops', image: cassava, alt: 'Young cassava plants growing among lush green leaves' },
-  { title: 'A harvest of greens', category: 'Fresh produce', image: harvest, alt: 'Recently harvested leafy greens laid out together' },
-  { title: 'Pepper harvest', category: 'Vegetable crops', image: pepper, alt: 'Fresh yellow, orange and red peppers from the farm' },
+  { title: 'vegetable plant in progress', category: 'Fresh produce', image: harvest, alt: 'Recently harvested leafy greens laid out together' },
+  { title: 'Pepper and okoro harvest', category: 'Vegetable crops', image: pepper, alt: 'Fresh yellow, orange and red peppers from the farm' },
   { title: 'Growing with care', category: 'Crop cultivation', image: vegetables, alt: 'Healthy vegetable plants growing in a small farm plot' },
-  { title: 'Leaf by leaf', category: 'Farm life', image: leaf, alt: 'Close view of leafy crops growing in the field' },
-  { title: 'Plants with potential', category: 'Crop cultivation', image: potato, alt: 'Young green plants thriving in rich soil' },
-  { title: 'From farm to table', category: 'Fresh produce', image: greens, alt: 'Freshly gathered green leaves ready for market' },
-  { title: 'A growing landscape', category: 'Farm spaces', image: fence, alt: 'Green crop rows beside a farm boundary' },
+  { title: 'vegetables harvest', category: 'Farm life', image: leaf, alt: 'Close view of leafy crops growing in the field' },
+  { title: 'sweet potato in progress', category: 'potato  cultivation', image: potato, alt: 'Young green plants thriving in rich soil' },
+  { title: 'From farm to table', category: 'saintleaf(adusirleaf)', image: greens, alt: 'Freshly gathered green leaves ready for market' },
+  { title: 'vegetable plant', category: 'Farm spaces', image: fence, alt: 'Green crop rows beside a farm boundary' },
   { title: 'Pepper plants in progress', category: 'Vegetable crops', image: pep, alt: 'Pepper plants growing with young yellow fruit in the field' },
 ];
 
 function currentPath() {
   const path = window.location.pathname.replace(/\/+$/, '') || '/';
+  if (path === '/admin') return path;
   return routes.some((route) => route.path === path) ? path : '/not-found';
 }
 
@@ -151,6 +159,14 @@ function Header({ path }) {
               {route.label}
             </Link>
           ))}
+          <Link
+            href="/admin"
+            className={`nav-admin${path === '/admin' ? ' nav-admin--active' : ''}`}
+            aria-current={path === '/admin' ? 'page' : undefined}
+            onClick={() => setMenuOpen(false)}
+          >
+            Admin <Arrow />
+          </Link>
           <Link href="/contact" className="nav-cta" onClick={() => setMenuOpen(false)}>
             Get in touch <Arrow />
           </Link>
@@ -227,7 +243,39 @@ function ServiceRows({ compact = false }) {
   );
 }
 
+function workPhotoUrl(work) {
+  return `/api/work/${encodeURIComponent(work.id)}/photo?v=${encodeURIComponent(work.imageVersion)}`;
+}
+
+function usePublicWork() {
+  const [work, setWork] = useState([]);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/work')
+      .then(async (response) => {
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || 'Unable to load managed work.');
+        if (!Array.isArray(result.work)) throw new Error('The managed work response was not valid.');
+        return result.work;
+      })
+      .then((entries) => {
+        if (active && Array.isArray(entries)) setWork(entries);
+      })
+      .catch(() => {
+        if (active) setError('Managed work is temporarily unavailable; showing the published collection.');
+      });
+    return () => { active = false; };
+  }, []);
+
+  return { work, error };
+}
+
 function HomePage() {
+  const { work } = usePublicWork();
+  const recentWork = work.slice(0, 2);
+
   return (
     <>
       <main>
@@ -288,14 +336,23 @@ function HomePage() {
             <Link href="/projects" className="text-link">See our work <Arrow /></Link>
           </div>
           <div className="home-gallery">
-            <Link href="/projects" className="home-gallery__large">
-              <img src={cassava} alt="Cassava leaves thriving in a green field" loading="lazy" />
-              <span className="gallery-label"><span>01 / Root crops</span><strong>Good things take root.</strong></span>
-            </Link>
-            <Link href="/projects" className="home-gallery__small">
-              <img src={pepper} alt="Fresh peppers collected from the farm" loading="lazy" />
-              <span className="gallery-label"><span>02 / Harvest</span><strong>Fresh from the field.</strong></span>
-            </Link>
+            {recentWork.length ? recentWork.map((entry, index) => (
+              <Link key={entry.id} href="/projects" className={index === 0 ? 'home-gallery__large' : 'home-gallery__small'}>
+                <img src={workPhotoUrl(entry)} alt={entry.alt} loading="lazy" />
+                <span className="gallery-label"><span>{String(index + 1).padStart(2, '0')} / {entry.category}</span><strong>{entry.title}</strong></span>
+              </Link>
+            )) : (
+              <>
+                <Link href="/projects" className="home-gallery__large">
+                  <img src={cassava} alt="Cassava leaves thriving in a green field" loading="lazy" />
+                  <span className="gallery-label"><span>01 / Root crops</span><strong>Good things take root.</strong></span>
+                </Link>
+                <Link href="/projects" className="home-gallery__small">
+                  <img src={pepper} alt="Fresh peppers collected from the farm" loading="lazy" />
+                  <span className="gallery-label"><span>02 / Harvest</span><strong>Fresh from the field.</strong></span>
+                </Link>
+              </>
+            )}
           </div>
         </section>
 
@@ -330,6 +387,7 @@ function AboutPage() {
           <Link href="/services" className="text-link">Explore what we do <Arrow /></Link>
         </div>
       </section>
+      <CeoProfile />
       <section className="purpose-section">
         <div className="purpose-section__poster">
           <img src={brandPoster} alt="Greenfarm & Tech Ventures brand poster showing its vision, mission and service areas" loading="lazy" />
@@ -354,6 +412,548 @@ function AboutPage() {
         </div>
       </section>
       <CtaStrip />
+    </main>
+  );
+}
+
+function usePublicProfile() {
+  const [profile, setProfile] = useState(initialProfile);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/profile')
+      .then((response) => {
+        if (!response.ok) throw new Error('Unable to load the CEO profile');
+        return response.json();
+      })
+      .then((data) => {
+        if (active) setProfile({ ...initialProfile, ...data });
+      })
+      .catch(() => {
+        if (active) setError('Live profile updates are temporarily unavailable; showing the default profile.');
+      });
+    return () => { active = false; };
+  }, []);
+
+  return { profile, error };
+}
+
+function CeoProfile() {
+  const { profile, error } = usePublicProfile();
+  const portrait = profile.photoVersion
+    ? `/api/profile/photo?v=${encodeURIComponent(profile.photoVersion)}`
+    : ceoPortrait;
+
+  return (
+    <section className="ceo-section" aria-labelledby="ceo-heading">
+      <div className="ceo-section__photo">
+        <img src={portrait} alt={`Portrait of ${profile.name}`} loading="lazy" />
+        <span className="ceo-section__photo-note">Leadership / Greenfarm</span>
+      </div>
+      <div className="ceo-section__content">
+        <span className="eyebrow eyebrow--light">The person behind the vision</span>
+        <h2 id="ceo-heading">{profile.name}</h2>
+        <p className="ceo-section__title">{profile.title}</p>
+        <p className="ceo-section__bio">{profile.bio}</p>
+        {error && <p className="ceo-section__notice" role="status">{error}</p>}
+        <span className="ceo-section__signature" aria-hidden="true">Rooted in possibility.</span>
+      </div>
+    </section>
+  );
+}
+
+function AdminPage() {
+  const [authenticated, setAuthenticated] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
+  const [profile, setProfile] = useState(null);
+  const [savedProfile, setSavedProfile] = useState(null);
+  const [password, setPassword] = useState('');
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [managedWork, setManagedWork] = useState([]);
+  const [workLoading, setWorkLoading] = useState(true);
+  const [workBusy, setWorkBusy] = useState(false);
+  const [workError, setWorkError] = useState('');
+  const [workMessage, setWorkMessage] = useState('');
+  const [editingWork, setEditingWork] = useState(null);
+  const [workDraft, setWorkDraft] = useState({ title: '', category: '', alt: '' });
+  const [workFile, setWorkFile] = useState(null);
+  const [workPreview, setWorkPreview] = useState('');
+
+  async function refreshManagedWork() {
+    setWorkLoading(true);
+    try {
+      const response = await fetch('/api/work');
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'Managed work could not be loaded.');
+      if (!Array.isArray(result.work)) throw new Error('The managed work response was not valid.');
+      setManagedWork(result.work);
+      setWorkError('');
+    } catch (cause) {
+      setWorkError(cause.message || 'Managed work could not be loaded.');
+    } finally {
+      setWorkLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/admin/session')
+      .then((response) => {
+        if (!response.ok) return null;
+        return response.json();
+      })
+      .then(async (session) => {
+        if (!active) return;
+        if (!session?.authenticated) {
+          setWorkLoading(false);
+          return;
+        }
+        setAuthenticated(true);
+        const response = await fetch('/api/profile');
+        if (!response.ok) throw new Error('Your profile could not be loaded. Please try again.');
+        const data = await response.json();
+        if (active) {
+          setProfile(data);
+          setSavedProfile(data);
+        }
+        await refreshManagedWork();
+      })
+      .catch((cause) => {
+        if (active) setError(cause.message || 'The profile service is unavailable.');
+      })
+      .finally(() => {
+        if (active) setCheckingSession(false);
+      });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => () => {
+    if (photoPreview.startsWith('blob:')) URL.revokeObjectURL(photoPreview);
+  }, [photoPreview]);
+
+  useEffect(() => () => {
+    if (workPreview.startsWith('blob:')) URL.revokeObjectURL(workPreview);
+  }, [workPreview]);
+
+  const photoUrl = photoPreview || (profile?.photoVersion
+    ? `/api/profile/photo?v=${encodeURIComponent(profile.photoVersion)}`
+    : ceoPortrait);
+
+  async function handleLogin(event) {
+    event.preventDefault();
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Sign in failed.');
+      setAuthenticated(true);
+      setPassword('');
+      const profileResponse = await fetch('/api/profile');
+      if (!profileResponse.ok) throw new Error('Your profile could not be loaded.');
+      const data = await profileResponse.json();
+      setProfile(data);
+      setSavedProfile(data);
+      await refreshManagedWork();
+    } catch (cause) {
+      setError(cause.message || 'The profile service is unavailable.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function handlePhotoChange(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setError('Choose a JPG, PNG or WebP image.');
+      event.target.value = '';
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError('The portrait must be 5 MB or smaller.');
+      event.target.value = '';
+      return;
+    }
+    setError('');
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+    event.target.value = '';
+  }
+
+  async function handleSave(event) {
+    event.preventDefault();
+    if (!profile) return;
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      const payload = { name: profile.name, title: profile.title, bio: profile.bio };
+      if (photoFile) {
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(new Error('The portrait could not be read.'));
+          reader.readAsDataURL(photoFile);
+        });
+        payload.photo = dataUrl.split(',')[1];
+        payload.photoType = photoFile.type;
+      }
+      const response = await fetch('/api/admin/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Your changes could not be saved.');
+      setProfile(result.profile);
+      setSavedProfile(result.profile);
+      setPhotoFile(null);
+      setPhotoPreview('');
+      setMessage('Your profile has been saved.');
+    } catch (cause) {
+      setError(cause.message || 'Your changes could not be saved.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function handleCancel() {
+    if (!savedProfile) return;
+    setProfile(savedProfile);
+    setPhotoFile(null);
+    setPhotoPreview('');
+    setError('');
+    setMessage('Unsaved changes were discarded.');
+  }
+
+  function resetWorkForm() {
+    setEditingWork(null);
+    setWorkDraft({ title: '', category: '', alt: '' });
+    setWorkFile(null);
+    setWorkPreview('');
+    setWorkError('');
+    setWorkMessage('');
+  }
+
+  function handleWorkFileChange(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setWorkError('Choose a JPG, PNG or WebP image.');
+      event.target.value = '';
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setWorkError('The work photo must be 5 MB or smaller.');
+      event.target.value = '';
+      return;
+    }
+    setWorkError('');
+    setWorkMessage('');
+    setWorkFile(file);
+    setWorkPreview(URL.createObjectURL(file));
+    event.target.value = '';
+  }
+
+  async function handleWorkSave(event) {
+    event.preventDefault();
+    setWorkBusy(true);
+    setWorkError('');
+    setWorkMessage('');
+    try {
+      const payload = { ...workDraft };
+      if (workFile) {
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(new Error('The work photo could not be read.'));
+          reader.readAsDataURL(workFile);
+        });
+        payload.photo = dataUrl.split(',')[1];
+        payload.photoType = workFile.type;
+      }
+      const response = await fetch(editingWork ? `/api/admin/work/${encodeURIComponent(editingWork)}` : '/api/admin/work', {
+        method: editingWork ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'The work entry could not be saved.');
+      if (editingWork) {
+        setManagedWork((entries) => entries.map((entry) => entry.id === editingWork ? result.work : entry)
+          .sort((left, right) => right.createdAt - left.createdAt));
+      } else {
+        setManagedWork((entries) => [result.work, ...entries]);
+      }
+      resetWorkForm();
+      setWorkMessage(editingWork ? 'Work entry updated.' : 'Work entry published.');
+    } catch (cause) {
+      setWorkError(cause.message || 'The work entry could not be saved.');
+    } finally {
+      setWorkBusy(false);
+    }
+  }
+
+  function startWorkEdit(entry) {
+    setEditingWork(entry.id);
+    setWorkDraft({ title: entry.title, category: entry.category, alt: entry.alt });
+    setWorkFile(null);
+    setWorkPreview(workPhotoUrl(entry));
+    setWorkError('');
+    setWorkMessage('');
+  }
+
+  async function handleWorkDelete(entry) {
+    if (!window.confirm(`Delete “${entry.title}” from the work gallery?`)) return;
+    setWorkBusy(true);
+    setWorkError('');
+    setWorkMessage('');
+    try {
+      const response = await fetch(`/api/admin/work/${encodeURIComponent(entry.id)}`, { method: 'DELETE' });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'The work entry could not be deleted.');
+      setManagedWork((entries) => entries.filter((item) => item.id !== entry.id));
+      if (editingWork === entry.id) resetWorkForm();
+      setWorkMessage('Work entry deleted.');
+    } catch (cause) {
+      setWorkError(cause.message || 'The work entry could not be deleted.');
+    } finally {
+      setWorkBusy(false);
+    }
+  }
+
+  async function handleLogout() {
+    setBusy(true);
+    setError('');
+    try {
+      const response = await fetch('/api/admin/logout', { method: 'POST' });
+      if (!response.ok) throw new Error('You could not be signed out. Please try again.');
+      setAuthenticated(false);
+      setProfile(null);
+      setSavedProfile(null);
+      setManagedWork([]);
+      resetWorkForm();
+      setMessage('You have signed out.');
+    } catch (cause) {
+      setError(cause.message || 'You could not be signed out. Please try again.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <main className="admin-page">
+      <div className="admin-page__masthead">
+        <span className="eyebrow">Greenfarm / Site management</span>
+        <Link href="/" className="text-link">Return to website <Arrow /></Link>
+      </div>
+      <section className={`admin-panel${authenticated ? ' admin-panel--editor' : ''}`}>
+        {checkingSession ? (
+          <div className="admin-state" role="status">
+            <span className="status-dot" /> Checking your session…
+          </div>
+        ) : !authenticated ? (
+          <div className="admin-login">
+            <div className="admin-login__intro">
+              <span className="eyebrow eyebrow--light">Private access</span>
+              <h1>A good profile<br /><em>starts with you.</em></h1>
+              <p>Sign in to keep the leadership story current. Your edits are saved to the Greenfarm profile service.</p>
+              <span className="admin-login__mark" aria-hidden="true">GF<span>+</span></span>
+            </div>
+            <form className="admin-form admin-form--login" onSubmit={handleLogin}>
+              <div>
+                <span className="eyebrow">Administrator</span>
+                <h2>Welcome back.</h2>
+                <p>Enter your administrator password to continue.</p>
+              </div>
+              <label className="admin-field">
+                <span>Password</span>
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  required
+                />
+              </label>
+              {error && <p className="admin-alert" role="alert">{error}</p>}
+              {message && <p className="admin-success" role="status">{message}</p>}
+              <button className="button button--lime admin-submit" type="submit" disabled={busy}>
+                {busy ? 'Signing in…' : 'Sign in'} <Arrow />
+              </button>
+              <p className="admin-form__note">Access is protected and available to authorised site administrators only.</p>
+            </form>
+          </div>
+        ) : profile ? (
+          <div className="admin-editor">
+            <div className="admin-editor__heading">
+              <div>
+                <span className="eyebrow">Public profile</span>
+                <h1>Leadership, <em>in your words.</em></h1>
+                <p>Update how the Greenfarm community meets its CEO on the About page.</p>
+              </div>
+              <button className="admin-logout" type="button" onClick={handleLogout} disabled={busy}>Sign out</button>
+            </div>
+            <form className="admin-editor__grid" onSubmit={handleSave}>
+              <div className="admin-photo">
+                <img src={photoUrl} alt="Current CEO portrait preview" />
+                <label className="admin-photo__button">
+                  <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handlePhotoChange} />
+                  <span>Choose a portrait</span><Arrow />
+                </label>
+                <p>JPG, PNG or WebP · up to 5 MB</p>
+              </div>
+              <div className="admin-fields">
+                <label className="admin-field">
+                  <span>Name</span>
+                  <input
+                    type="text"
+                    maxLength="100"
+                    value={profile.name || ''}
+                    onChange={(event) => setProfile({ ...profile, name: event.target.value })}
+                    required
+                  />
+                </label>
+                <label className="admin-field">
+                  <span>Title</span>
+                  <input
+                    type="text"
+                    maxLength="100"
+                    value={profile.title || ''}
+                    onChange={(event) => setProfile({ ...profile, title: event.target.value })}
+                    required
+                  />
+                </label>
+                <label className="admin-field">
+                  <span>Introduction <small>{(profile.bio || '').length}/1000</small></span>
+                  <textarea
+                    rows="6"
+                    maxLength="1000"
+                    value={profile.bio || ''}
+                    onChange={(event) => setProfile({ ...profile, bio: event.target.value })}
+                    required
+                  />
+                </label>
+                {error && <p className="admin-alert" role="alert">{error}</p>}
+                {message && <p className="admin-success" role="status">{message}</p>}
+                <div className="admin-actions">
+                  <button className="button button--green" type="submit" disabled={busy}>
+                    {busy ? 'Saving…' : 'Save changes'} <Arrow />
+                  </button>
+                  <button className="admin-cancel" type="button" onClick={handleCancel} disabled={busy}>Cancel</button>
+                </div>
+              </div>
+            </form>
+            <section className="admin-work" aria-labelledby="admin-work-heading">
+              <div className="admin-work__heading">
+                <div>
+                  <span className="eyebrow">Published gallery</span>
+                  <h2 id="admin-work-heading">Work from the field.</h2>
+                  <p>Add new work for the public gallery. Recent entries also appear on the home page.</p>
+                </div>
+                {editingWork && <span className="admin-work__editing">Editing entry</span>}
+              </div>
+              <form className="admin-work__form" onSubmit={handleWorkSave}>
+                <div className="admin-work__form-fields">
+                  <label className="admin-field">
+                    <span>Title <small>{workDraft.title.length}/100</small></span>
+                    <input
+                      type="text"
+                      maxLength="100"
+                      value={workDraft.title}
+                      onChange={(event) => setWorkDraft({ ...workDraft, title: event.target.value })}
+                      required
+                    />
+                  </label>
+                  <label className="admin-field">
+                    <span>Category <small>{workDraft.category.length}/80</small></span>
+                    <input
+                      type="text"
+                      maxLength="80"
+                      value={workDraft.category}
+                      onChange={(event) => setWorkDraft({ ...workDraft, category: event.target.value })}
+                      required
+                    />
+                  </label>
+                  <label className="admin-field admin-work__description">
+                    <span>Accessible image description <small>{workDraft.alt.length}/240</small></span>
+                    <textarea
+                      rows="3"
+                      maxLength="240"
+                      value={workDraft.alt}
+                      onChange={(event) => setWorkDraft({ ...workDraft, alt: event.target.value })}
+                      required
+                    />
+                  </label>
+                </div>
+                <div className="admin-work__upload">
+                  {workPreview ? (
+                    <img src={workPreview} alt={workFile ? 'Selected work photo preview' : 'Current work photo'} />
+                  ) : (
+                    <div className="admin-work__placeholder" aria-hidden="true"><span>GF</span><small>Work photo preview</small></div>
+                  )}
+                  <label className="admin-photo__button">
+                    <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleWorkFileChange} required={!editingWork && !workFile} />
+                    <span>{workFile ? 'Choose a different photo' : editingWork ? 'Replace photo (optional)' : 'Choose a work photo'}</span><Arrow />
+                  </label>
+                  <p>JPG, PNG or WebP · up to 5 MB</p>
+                  {!editingWork && <p className="admin-work__required">A photo is required to publish.</p>}
+                </div>
+                <div className="admin-work__controls">
+                  {workError && <p className="admin-alert" role="alert">{workError}</p>}
+                  {workMessage && <p className="admin-success" role="status">{workMessage}</p>}
+                  <div className="admin-actions">
+                    <button className="button button--green" type="submit" disabled={workBusy}>
+                      {workBusy ? 'Saving…' : editingWork ? 'Save work entry' : 'Publish work entry'} <Arrow />
+                    </button>
+                    {editingWork && <button className="admin-cancel" type="button" onClick={resetWorkForm} disabled={workBusy}>Cancel edit</button>}
+                  </div>
+                </div>
+              </form>
+              <div className="admin-work__list-heading">
+                <h3>Managed entries <span>{managedWork.length}</span></h3>
+                {workLoading && <span role="status">Loading work…</span>}
+              </div>
+              {!workLoading && !managedWork.length ? (
+                <p className="admin-work__empty">No managed entries yet. The public gallery will continue to show its existing collection.</p>
+              ) : (
+                <div className="admin-work__list">
+                  {managedWork.map((entry) => (
+                    <article className="admin-work-item" key={entry.id}>
+                      <img src={workPhotoUrl(entry)} alt="" />
+                      <div className="admin-work-item__details">
+                        <span>{entry.category}</span>
+                        <h4>{entry.title}</h4>
+                        <p>{entry.alt}</p>
+                      </div>
+                      <div className="admin-work-item__actions">
+                        <button type="button" onClick={() => startWorkEdit(entry)} disabled={workBusy}>Edit</button>
+                        <button type="button" onClick={() => handleWorkDelete(entry)} disabled={workBusy}>Delete</button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
+        ) : (
+          <div className="admin-state">
+            {error || 'The profile could not be loaded.'}
+            <button type="button" className="admin-retry" onClick={() => window.location.reload()}>Try again</button>
+          </div>
+        )}
+      </section>
     </main>
   );
 }
@@ -391,6 +991,18 @@ function ServicesPage() {
 }
 
 function ProjectsPage() {
+  const { work: managedWork, error } = usePublicWork();
+  const galleryProjects = [
+    ...projects,
+    ...managedWork.map((entry) => ({
+      id: entry.id,
+      title: entry.title,
+      category: entry.category,
+      image: workPhotoUrl(entry),
+      alt: entry.alt,
+    })),
+  ];
+
   return (
     <main>
       <PageIntro
@@ -403,9 +1015,10 @@ function ProjectsPage() {
           <span className="eyebrow">Field notes / 2026</span>
           <p>Real glimpses of growing and gathering—shared without the noise, and without the numbers.</p>
         </div>
+        {error && <p className="projects-notice" role="status">{error}</p>}
         <div className="projects-grid">
-          {projects.map((project, index) => (
-            <figure className={`project-tile project-tile--${index + 1}`} key={project.title}>
+          {galleryProjects.map((project, index) => (
+            <figure className={`project-tile project-tile--${index + 1}`} key={project.id || project.title}>
               <div className="project-tile__image">
                 <img src={project.image} alt={project.alt} loading="lazy" />
                 <span className="project-tile__number">0{index + 1}</span>
@@ -496,7 +1109,9 @@ export default function App() {
 
   useEffect(() => {
     const active = routes.find((route) => route.path === path);
-    document.title = active && path !== '/'
+    document.title = path === '/admin'
+      ? 'Admin | Greenfarm & Tech Ventures'
+      : active && path !== '/'
       ? `${active.label === 'Our work' ? 'Our Work' : active.label} | Greenfarm & Tech Ventures`
       : 'Greenfarm & Tech Ventures | Growing Agriculture, Advancing Technology';
   }, [path]);
@@ -507,6 +1122,7 @@ export default function App() {
     '/services': <ServicesPage />,
     '/projects': <ProjectsPage />,
     '/contact': <ContactPage />,
+    '/admin': <AdminPage />,
     '/not-found': <NotFoundPage />,
   };
 
@@ -516,9 +1132,11 @@ export default function App() {
       <Header path={path} />
       <div id="main-content" tabIndex="-1">{pages[path] || <NotFoundPage />}</div>
       <Footer />
-      <a className="whatsapp-float" href="https://wa.me/2348060379022" target="_blank" rel="noreferrer" aria-label="Chat with Greenfarm on WhatsApp">
-        <span aria-hidden="true">W</span><span>WhatsApp</span>
-      </a>
+      {path !== '/admin' && (
+        <a className="whatsapp-float" href="https://wa.me/2348060379022" target="_blank" rel="noreferrer" aria-label="Chat with Greenfarm on WhatsApp">
+          <span aria-hidden="true">W</span><span>WhatsApp</span>
+        </a>
+      )}
     </>
   );
 }
