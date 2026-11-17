@@ -20,6 +20,16 @@ const initialProfile = {
   bio: 'Rich Victor Jeremiah leads Greenfarm & Tech Ventures at the meeting point of agriculture and technology. His work is guided by practical innovation, sustainable growth and creating opportunity for people and communities.',
 };
 
+async function readLoginResponse(response) {
+  try {
+    return await response.json();
+  } catch {
+    throw new Error(
+      `The sign-in service returned an unexpected response (HTTP ${response.status}). Verify that Vercel deployed the /api/admin/login function, then redeploy after updating its environment variables.`,
+    );
+  }
+}
+
 async function prepareAdminPhoto(file, kind) {
   if (!import.meta.env.PROD) {
     const dataUrl = await new Promise((resolve, reject) => {
@@ -576,7 +586,7 @@ function AdminPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password }),
       });
-      const result = await response.json();
+      const result = await readLoginResponse(response);
       if (!response.ok) throw new Error(result.error || 'Sign in failed.');
       setAuthenticated(true);
       setPassword('');
