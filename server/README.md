@@ -16,4 +16,12 @@ The public gallery reads managed entries from `GET /api/work`; its photo URLs us
 
 ## Deployment
 
-Configure `ADMIN_PASSWORD` and `PORT` in the hosting environment. Deploy the React build with a same-origin `/api` reverse proxy to this Node service, provide persistent storage for `server/data/`, and use HTTPS so the administrator session cookie is marked Secure. Configure the web host to return the SPA entry point for direct `/admin` navigation. Do not expose the service on an untrusted public network without HTTPS and appropriate network controls.
+The Vercel deployment uses the serverless API in `api/[...path].js`; the Node service in this directory is for local development and is not deployed as a long-running Vercel server.
+
+Before deploying to Vercel:
+
+1. Create a **private** Vercel Blob store and connect it to this project. Enable the read-write token environment variable for the connection; browser photo uploads need `BLOB_READ_WRITE_TOKEN`.
+2. Set `ADMIN_PASSWORD` and `ADMIN_SESSION_SECRET` in the Vercel project's Production and Preview environment variables. Use a unique password of at least 12 characters and a separate random session secret.
+3. Redeploy after connecting storage and adding the variables.
+
+The API persists profile and work metadata in a private Blob object and serves uploaded photos through same-origin API routes. Vercel rewrites direct `/admin` visits to the app entry point. Local development continues to use `npm run server` and the Vite `/api` proxy; Vercel Blob is not required locally.

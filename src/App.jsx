@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useSyncExternalStore } from 'react';
+import { upload } from '@vercel/blob/client';
 import cassava from '../cassava.jpeg';
 import eaga from '../eaga.jpeg';
 import fence from '../fence.jpeg';
@@ -18,6 +19,26 @@ const initialProfile = {
   title: 'Chief Executive Officer',
   bio: 'Rich Victor Jeremiah leads Greenfarm & Tech Ventures at the meeting point of agriculture and technology. His work is guided by practical innovation, sustainable growth and creating opportunity for people and communities.',
 };
+
+async function prepareAdminPhoto(file, kind) {
+  if (!import.meta.env.PROD) {
+    const dataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('The photo could not be read.'));
+      reader.readAsDataURL(file);
+    });
+    return { photo: dataUrl.split(',')[1], photoType: file.type };
+  }
+
+  const extension = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[file.type];
+  if (!extension) throw new Error('Choose a JPG, PNG or WebP image.');
+  const blob = await upload(`uploads/${kind}/${crypto.randomUUID()}.${extension}`, file, {
+    access: 'private',
+    handleUploadUrl: '/api/admin/upload',
+  });
+  return { photoPath: blob.pathname, photoType: file.type };
+}
 
 const routes = [
   { path: '/', label: 'Home' },
@@ -599,16 +620,7 @@ function AdminPage() {
     setMessage('');
     try {
       const payload = { name: profile.name, title: profile.title, bio: profile.bio };
-      if (photoFile) {
-        const dataUrl = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = () => reject(new Error('The portrait could not be read.'));
-          reader.readAsDataURL(photoFile);
-        });
-        payload.photo = dataUrl.split(',')[1];
-        payload.photoType = photoFile.type;
-      }
+      if (photoFile) Object.assign(payload, await prepareAdminPhoto(photoFile, 'profile'));
       const response = await fetch('/api/admin/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -673,16 +685,7 @@ function AdminPage() {
     setWorkMessage('');
     try {
       const payload = { ...workDraft };
-      if (workFile) {
-        const dataUrl = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = () => reject(new Error('The work photo could not be read.'));
-          reader.readAsDataURL(workFile);
-        });
-        payload.photo = dataUrl.split(',')[1];
-        payload.photoType = workFile.type;
-      }
+      if (workFile) Object.assign(payload, await prepareAdminPhoto(workFile, 'work'));
       const response = await fetch(editingWork ? `/api/admin/work/${encodeURIComponent(editingWork)}` : '/api/admin/work', {
         method: editingWork ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
