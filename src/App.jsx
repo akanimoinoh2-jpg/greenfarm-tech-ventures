@@ -44,10 +44,10 @@ async function prepareAdminPhoto(file, kind) {
   const extension = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[file.type];
   if (!extension) throw new Error('Choose a JPG, PNG or WebP image.');
   const blob = await upload(`uploads/${kind}/${crypto.randomUUID()}.${extension}`, file, {
-    access: 'private',
+    access: 'public',
     handleUploadUrl: '/api/admin/upload',
   });
-  return { photoPath: blob.pathname, photoType: file.type };
+  return { photoPath: blob.pathname, photoType: file.type, photoUrl: blob.url };
 }
 
 const routes = [
@@ -190,14 +190,6 @@ function Header({ path }) {
               {route.label}
             </Link>
           ))}
-          <Link
-            href="/admin"
-            className={`nav-admin${path === '/admin' ? ' nav-admin--active' : ''}`}
-            aria-current={path === '/admin' ? 'page' : undefined}
-            onClick={() => setMenuOpen(false)}
-          >
-            Admin <Arrow />
-          </Link>
           <Link href="/contact" className="nav-cta" onClick={() => setMenuOpen(false)}>
             Get in touch <Arrow />
           </Link>
@@ -218,6 +210,9 @@ function Footer() {
         <div className="footer-nav">
           <span className="eyebrow eyebrow--light">Explore</span>
           {routes.slice(1).map((route) => <Link key={route.path} href={route.path}>{route.label}</Link>)}
+          <Link href="/admin" className="button button--lime footer-admin">
+            Admin <Arrow />
+          </Link>
         </div>
         <div className="footer-connect">
           <span className="eyebrow eyebrow--light">Start a conversation</span>
